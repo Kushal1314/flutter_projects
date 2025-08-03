@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:glassmorphism/glassmorphism.dart';
+import '../services/firestore_service.dart';
 
 class HomeScreen extends StatefulWidget {
   final String apiKey;
@@ -28,6 +30,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadCachedData();
+  }
+
+  @override
+  void dispose() {
+    _cityController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadCachedData() async {
@@ -171,103 +179,166 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _cityController,
-                    decoration: InputDecoration(
-                      labelText: 'Enter city name',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF232526), // dark blue/gray
+              Color(0xFF414345), // deep gray
+              Color(0xFF6a11cb), // purple
+              Color(0xFF2575fc), // blue
+            ],
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              // --- Search Bar ---
+              Card(
+                elevation: 8,
+                color: Colors.white.withOpacity(0.95),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _cityController,
+                          style: GoogleFonts.poppins(),
+                          decoration: InputDecoration(
+                            labelText: 'Enter city name',
+                            border: InputBorder.none,
+                            prefixIcon: Icon(Icons.search, color: Colors.blueAccent),
+                          ),
+                          onSubmitted: (value) => _fetchWeather(value),
+                        ),
                       ),
-                      filled: true,
-                      fillColor: Colors.white.withOpacity(0.8),
-                    ),
-                    onSubmitted: (value) => _fetchWeather(value),
+                      IconButton(
+                        icon: const Icon(Icons.send, color: Colors.blueAccent),
+                        onPressed: () => _fetchWeather(_cityController.text),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 10),
-                IconButton(
-                  icon: const Icon(Icons.search, color: Colors.white, size: 30),
-                  onPressed: () => _fetchWeather(_cityController.text),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            if (_loading)
-              const CircularProgressIndicator(color: Colors.white)
-            else if (weather != null) ...[
-              GlassmorphicContainer(
-                width: double.infinity,
-                height: 260,
-                borderRadius: 20,
-                blur: 20,
-                border: 2,
-                alignment: Alignment.center,
-                linearGradient: LinearGradient(
-                  colors: [
-                    Colors.white.withOpacity(0.2),
-                    Colors.white.withOpacity(0.05),
-                  ],
-                ),
-                borderGradient: LinearGradient(
-                  colors: [
-                    Colors.white.withOpacity(0.5),
-                    Colors.white.withOpacity(0.5),
-                  ],
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      _location,
-                      style: const TextStyle(
-                          fontSize: 22,
+              ),
+              const SizedBox(height: 24),
+              if (_loading)
+                const CircularProgressIndicator(color: Colors.white)
+              else if (weather != null) ...[
+                GlassmorphicContainer(
+                  width: double.infinity,
+                  height: 300,
+                  borderRadius: 28,
+                  blur: 24,
+                  border: 2,
+                  alignment: Alignment.center,
+                  linearGradient: LinearGradient(
+                    colors: [
+                      Colors.white.withOpacity(0.25),
+                      Colors.white.withOpacity(0.08),
+                    ],
+                  ),
+                  borderGradient: LinearGradient(
+                    colors: [
+                      Colors.white.withOpacity(0.5),
+                      Colors.white.withOpacity(0.2),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _location,
+                        style: GoogleFonts.poppins(
+                          fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white),
-                    ),
-                    const SizedBox(height: 20),
-                    Icon(
-                      _getWeatherIcon(weather!['weather'][0]['description']),
-                      size: 100,
-                      color: Colors.yellow,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      '${weather!['weather'][0]['description']}',
-                      style: const TextStyle(fontSize: 18, color: Colors.white),
-                    ),
-                    Text(
-                      '🌡️ ${weather!['main']['temp']}°C',
-                      style: const TextStyle(fontSize: 18, color: Colors.white),
-                    ),
-                    Text(
-                      '💧 Humidity: ${weather!['main']['humidity']}%',
-                      style: const TextStyle(fontSize: 18, color: Colors.white),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              if (air != null)
-                Text('Air Quality Index: ${air!['list'][0]['main']['aqi']}',
-                    style: const TextStyle(color: Colors.white, fontSize: 18)),
-            ] else
-              const Expanded(
-                child: Center(
-                  child: Text(
-                    'Search for a city to get weather information.',
-                    style: TextStyle(fontSize: 18, color: Colors.white),
-                    textAlign: TextAlign.center,
+                          color: Colors.deepPurple,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Icon(
+                        _getWeatherIcon(weather!['weather'][0]['description']),
+                        size: 100,
+                        color: Colors.amber[600],
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        '${weather!['weather'][0]['description']}',
+                        style: GoogleFonts.poppins(
+                          fontSize: 20,
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        '🌡️ ${weather!['main']['temp']}°C',
+                        style: GoogleFonts.poppins(
+                          fontSize: 20,
+                          color: Colors.blueAccent,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        '💧 Humidity: ${weather!['main']['humidity']}%',
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          color: Colors.blueGrey,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-          ],
+                const SizedBox(height: 20),
+                if (air != null)
+                  Text(
+                    'Air Quality Index: ${air!['list'][0]['main']['aqi']}',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                const SizedBox(height: 20),
+                ElevatedButton.icon(
+                  icon: Icon(Icons.favorite),
+                  label: Text('Save as Favorite'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    textStyle: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  onPressed: () async {
+                    final city = _location;
+                    await FirestoreService().addFavoriteCity(city);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Saved $city as favorite!')),
+                    );
+                  },
+                ),
+              ] else
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      'Search for a city to get weather information.',
+                      style: GoogleFonts.poppins(
+                        fontSize: 20,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
