@@ -1,0 +1,64 @@
+name: weather_app
+description: A Flutter weather application
+publish_to: "none" # Prevents accidental publishing to pub.dev
+
+environment:
+  sdk: ">=3.0.0 <4.0.0" # Specifies the Dart SDK range
+
+dependencies:
+  flutter:
+    sdk: flutter # Core Flutter framework
+
+  # HTTP client for making network requests
+  http: ^1.2.1
+
+  # For loading environment variables from a .env file
+  flutter_dotenv: ^5.1.0
+
+  # Local NoSQL database for caching data
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0 # Flutter-specific Hive integration
+
+  # For simple key-value pair storage (e.g., app settings)
+  shared_preferences: ^2.2.3
+
+  # For displaying local notifications
+  flutter_local_notifications: ^19.4.0
+
+  # For internationalization and localization support
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2 # For date formatting and other internationalization utilities
+
+  # For timezone conversions, often used with local notifications
+  timezone: ^0.10.1
+
+  # For displaying Lottie animations (e.g., weather icons)
+  lottie: ^3.1.0
+
+  # For creating glassmorphism UI effects
+  glassmorphism: ^3.0.0
+
+  # Common iOS-style icons
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter # For writing unit and widget tests
+  flutter_lints: ^3.0.1 # Recommended lints for Flutter projects
+
+  # Mocking framework for unit testing
+  mockito: ^5.4.0
+
+  # Tool for code generation (e.g., for Hive adapters)
+  build_runner: ^2.4.0
+
+  # Helpers for testing Hive databases
+  hive_test: ^1.0.0
+
+flutter:
+  uses-material-design: true # Enables Material Design in your app
+
+  # Assets section to include your .env file
+  assets:
+    - .env
